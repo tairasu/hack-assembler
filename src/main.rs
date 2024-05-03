@@ -5,21 +5,10 @@ fn main() {
     let file = get_file();
     let mut output: String = String::new();
     let mut custom_symbols: HashMap<String, i16> = HashMap::new();
-    let mut jump_symbols: HashMap<String, i16> = HashMap::new();
-
-    //get all symbols in brackets and add them to the custom symbols hashmap
-    let lines = file.lines();
-    for line in lines {
-        if line.starts_with("(") {
-            let line = line.trim_start_matches("(").trim_end_matches(")");
-            custom_symbols.insert(line.to_string(), 0);
-        }
-    }
-
 
 
     //PREDEFINED SYMBOLS
-    let predefined_symbols = [
+    let predefined_symbols: [(&str, i32); 23] = [
         ("SP", 0),
         ("LCL", 1),
         ("ARG", 2),
@@ -45,24 +34,41 @@ fn main() {
         ("KBD", 24576),
     ];
 
-    //check if A instruction
+
+    //FIRST PASS
+    //check if L instruction
     let lines = file.lines();
+    let mut line_number: i16 = 0;
     for line in lines {
+        if line.starts_with("(") {
+            let line = line.trim_start_matches("(").trim_end_matches(")");
+            custom_symbols.insert(line.to_string(), line_number);
+        } else {
+            line_number += 1;
+        }
+    }
+
+    //remove all L instructions and save in lines
+    let lines = file.lines();
+    let clean_lines = lines.filter(|line| !line.starts_with("(")).collect::<Vec<&str>>();
+
+    //SECOND PASS
+    //check if A instruction
+    for line in clean_lines {
         if line.starts_with("@") {
             let line = line.trim_start_matches("@");
 
-            if !line.parse::<f64>().is_err() {
-                let line = line.parse::<f64>().unwrap();
+            if !line.parse::<i16>().is_err() {
                 //USING NUMBERS
+                let line = line.parse::<i16>().unwrap();
                 let binary = format!("0{:015b}", line as i16);
                 output.push_str(&binary);
                 output.push('\n');
             } else {
                 //ADDING CUSTOM SYMBOLS
-                if !predefined_symbols.iter().any(|(symbol, _)| symbol.to_string() == format!("{}", &line)) && line.is_ascii() {
-                    //count how many custom symbols there are
+                if !predefined_symbols.iter().any(|(symbol, _)| symbol == &line) && !custom_symbols.contains_key(line) {
                     let count = custom_symbols.len() as i16;
-                    custom_symbols.insert(line.to_string(), 16+count);
+                    custom_symbols.insert(line.to_string(), 16 + count);
                 }
 
                 //USING PREDEFINED SYMBOLS
@@ -118,7 +124,40 @@ fn main() {
                 Some("D&M") => binary.push_str("1000000"),
                 Some("D|A") => binary.push_str("0010101"),
                 Some("D|M") => binary.push_str("1010101"),
-                _ => println!("BRERROR")
+                _ => ()
+            }
+
+            //comp for jump
+            match line.split(";").nth(0) {
+                Some("0") => binary.push_str("0101010"),
+                Some("1") => binary.push_str("0111111"),
+                Some("-1") => binary.push_str("0111010"),
+                Some("D") => binary.push_str("0001100"),
+                Some("A") => binary.push_str("0110000"),
+                Some("M") => binary.push_str("1110000"),
+                Some("!D") => binary.push_str("0001101"),
+                Some("!A") => binary.push_str("0110001"),
+                Some("!M") => binary.push_str("1110001"),
+                Some("-D") => binary.push_str("0001111"),
+                Some("-A") => binary.push_str("0110011"),
+                Some("-M") => binary.push_str("1110011"),
+                Some("D+1") => binary.push_str("0011111"),
+                Some("A+1") => binary.push_str("0110111"),
+                Some("M+1") => binary.push_str("1110111"),
+                Some("D-1") => binary.push_str("0001110"),
+                Some("A-1") => binary.push_str("0110010"),
+                Some("M-1") => binary.push_str("1110010"),
+                Some("D+A") => binary.push_str("0000010"),
+                Some("D+M") => binary.push_str("1000010"),
+                Some("D-A") => binary.push_str("0010011"),
+                Some("D-M") => binary.push_str("1010011"),
+                Some("A-D") => binary.push_str("0000111"),
+                Some("M-D") => binary.push_str("1000111"),
+                Some("D&A") => binary.push_str("0000000"),
+                Some("D&M") => binary.push_str("1000000"),
+                Some("D|A") => binary.push_str("0010101"),
+                Some("D|M") => binary.push_str("1010101"),
+                _ => ()
             }
 
             //dest
@@ -135,6 +174,7 @@ fn main() {
             }
 
             //jump
+
             match line.split(";").nth(1) {
                 None => binary.push_str("000"),
                 Some("JGT") => binary.push_str("001"),
@@ -156,8 +196,8 @@ fn main() {
     output.pop();
     println!("{}", output);
 
-    println!("{:?}", predefined_symbols);
-    println!("{:?}", custom_symbols);
+    // println!("{:?}", predefined_symbols);
+    // println!("{:?}", custom_symbols);
 
     //validate output that each line is 16 bits
     // let lines = output.lines();
@@ -168,7 +208,7 @@ fn main() {
     // }
 
     //write to file with the .hack extension
-    std::fs::write("/Users/marco/VSCode/nand2tetris/hack-assembler/6/max/Max.hack", output).unwrap();
+    std::fs::write("/Users/marco/VSCode/nand2tetris/hack-assembler/6/rect/Rect.hack", output).unwrap();
 
 }
 
@@ -177,7 +217,7 @@ fn get_file() -> String {
 
         //READ FILE AND REMOVE COMMENTS
 
-        let path = "/Users/marco/VSCode/nand2tetris/hack-assembler/6/max/Max.asm";
+        let path = "/Users/marco/VSCode/nand2tetris/hack-assembler/6/rect/Rect.asm";
         let file = std::fs::read_to_string(path).unwrap();
         let lines = file.lines();
         let mut output = String::new();
