@@ -14,13 +14,12 @@ To build the assembler, you will use Cargo, Rust's package manager and build sys
 
 1. Clone this repository to your local machine using Git:
    ```sh
-   git clone https://github.com/yourusername/nand2tetris-assembler-rust.git
+   git clone git@github.com:tairasu/hack-assembler.git
    ```
-   Replace `yourusername` with your actual GitHub username.
 
 2. Navigate into the project directory:
    ```sh
-   cd nand2tetris-assembler-rust
+   cd hack-assembler
    ```
 
 3. Build the project using Cargo:
